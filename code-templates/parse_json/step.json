@@ -1,0 +1,26 @@
+{
+  "schema": 2,
+  "trigger_type": "output",
+  "type": "custom",
+  "name": "Parse JSON",
+  "key": "parse_json", 
+  "metadata": {
+      "script": "parse_json.js"
+  },
+  "local_fields": [
+      {
+          "key": "json_string",
+          "label": "JSON String",
+          "type": "string",
+          "tokens": true,
+          "required": true,
+          "default": "Pick a value",
+          "location": "required"
+      }
+  ],
+  "selected_fields": [
+      "script"
+  ],
+  "on_error": "default",
+  "weight": 1
+}
