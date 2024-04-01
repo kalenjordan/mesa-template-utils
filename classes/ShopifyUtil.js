@@ -130,7 +130,7 @@ const ShopifyUtil = {
   },
 
   unpublishFromChannel: (gid, publicationId) => { 
-    let query = `
+    let query = `#graphql
       mutation publishableUnpublish($id: ID!, $input: [PublicationInput!]!) {
         publishableUnpublish(id: $id, input: $input) {
           publishable {
@@ -163,7 +163,7 @@ const ShopifyUtil = {
   },
 
   publishToChannel: (gid, publicationId) => { 
-    let query = `
+    let query = `#graphql
       mutation publishablePublish($id: ID!, $input: [PublicationInput!]!) {
         publishablePublish(id: $id, input: $input) {
           publishable {
@@ -196,7 +196,7 @@ const ShopifyUtil = {
   },
 
   queryProductsByTag: (tag, max) => { 
-    let query = `
+    let query = `#graphql
     {
       products(first:${max},query:"tag:${tag}"){
         nodes {
@@ -212,6 +212,104 @@ const ShopifyUtil = {
     return response.products.nodes;
   },
 
+  companyLocationsForCustomer: (id) => {
+    let query = `#graphql
+      {
+        customer(id: "gid://shopify/Customer/${id}") {
+          email
+          companyContactProfiles {
+            roleAssignments(first: 10) {
+              nodes {
+                role {
+                  name
+                }
+                companyLocation {
+                  id
+                  name
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = ShopifyGraphql.send(query, null, {}, 'admin/api/2023-10/graphql.json');
+    return response.data.customer.companyContactProfiles[0].roleAssignments.nodes;
+  },
+
+  assignTaxExemptStatusToLocation: (id, taxExemption) => {
+    let query = `#graphql
+      mutation assignTaxExemptions($id:ID!,$exemptions:[TaxExemption!]!) {
+        companyLocationAssignTaxExemptions(
+          companyLocationId: $id
+          taxExemptions: $exemptions
+        ) {
+          companyLocation {
+            name
+            taxExemptions
+          }
+        }
+      }
+    `;
+
+    const response = ShopifyGraphql.send(query, {
+      "id": id,
+      "exemptions": [taxExemption]
+    }, {}, 'admin/api/2023-10/graphql.json');
+
+    return response.data.companyContactProfiles.companyLocation ;
+  },
+
+  variantIdFromSku: (sku) => {
+    let query = `#graphql
+      query($query: String!) {
+        productVariants(first: 3, query: $query) {
+          nodes {
+            id: legacyResourceId
+            sku
+            inventoryItem {
+              id
+            }
+            product {
+              id: legacyResourceId
+            }
+          }
+        }
+      }
+    `;
+
+    const response = ShopifyGraphql.send(query, {
+      "query": "sku:" + sku,
+    }, {}, 'admin/api/2023-10/graphql.json');
+
+    let variant = response.data.productVariants.nodes[0];
+    if (! variant) {
+      return [null, null];
+    }
+
+    return [variant.id, variant.product.id];
+  },
+
+  ordersByTag: (tag, limit) => {
+    let query = `#graphql
+      query($query: String!, $limit: Int!) {
+        orders(first: $limit, query: $query) {
+          nodes {
+            id: legacyResourceId
+            name
+          }
+        }
+      }
+    `;
+
+    const response = ShopifyGraphql.send(query, {
+      "query": "tag:" + tag,
+      "limit": limit
+    }, {}, 'admin/api/2023-10/graphql.json');
+
+    return response.data.orders.nodes;
+  }
 }
 
 module.exports = ShopifyUtil;
