@@ -25,10 +25,10 @@ const Util = {
     })
   },
 
-  getMesaStorage(key, defaultValue) {
+  getMesaStorage(key, defaultValue = null) {
     let value = null;
     try {
-      value = Mesa.storage.get(key, defaultValue) ? Mesa.storage.get(key, defaultValue) : null;
+      value = Mesa.storage.get(key, defaultValue) ? Mesa.storage.get(key, defaultValue) : defaultValue;
     } catch (e) {
       // Will return null
     }
