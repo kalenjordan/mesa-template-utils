@@ -309,7 +309,97 @@ const ShopifyUtil = {
     }, {}, 'admin/api/2023-10/graphql.json');
 
     return response.data.orders.nodes;
+  },
+
+  orderEditBegin: (orderId) => {
+    let query = `#graphql
+      mutation orderEditBegin($id: ID!) {
+        orderEditBegin(id: $id) {
+          calculatedOrder {
+            id
+            lineItems(first:10) {
+              nodes {
+                id
+                sku
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const r = ShopifyGraphql.send(query, {
+      "id": "gid://shopify/Order/" + orderId,
+    });
+
+    let calculatedOrder = r.data.orderEditBegin.calculatedOrder;
+
+    return calculatedOrder;
+  },
+
+  setOrderQuantity: (calculatedOrder, calculatedLineItem, quantity) => {
+    let query = `#graphql
+      mutation editSetQuantity($id: ID!, $lineItemId: ID!, $quantity: Int!) {
+        orderEditSetQuantity(id: $id, quantity: $quantity, lineItemId: $lineItemId) {
+          calculatedOrder {
+            id
+          }
+          calculatedLineItem {
+            id
+            quantity
+          }
+        }
+      }
+    `;
+
+    const r = ShopifyGraphql.send(query, {
+      "id": calculatedOrder.id,
+      "lineItemId": calculatedLineItem.id,
+      "quantity": quantity
+    });
+  },
+
+  orderEditCommit: (calculatedOrder) => {
+    let query = `#graphql
+      mutation orderEditCommit($id: ID!) {
+        orderEditCommit(id: $id) {
+          order {
+            id
+          }
+        }
+      }
+    `;
+
+    const r = ShopifyGraphql.send(query, {
+      "id": calculatedOrder.id
+    });
+  },
+
+  variantOnHandInventoryLevels: (variantId) => {
+    let query = `#graphql
+      {
+        productVariant(id: "gid://shopify/ProductVariant/44944574775617") {
+          legacyResourceId
+          sku
+          inventoryItem {
+            inventoryLevels(first: 10) {
+              nodes {
+                quantities(names: "on_hand") {
+                  on_hand: quantity
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const r = ShopifyGraphql.send(query);
+
+    return r.data.productVariant.inventoryItem.inventoryLevels.nodes;
   }
-}
+
+
+} // close object
 
 module.exports = ShopifyUtil;
